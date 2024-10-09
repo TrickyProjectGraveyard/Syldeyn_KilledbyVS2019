@@ -236,6 +236,64 @@ namespace Slyvina {
 						if (variable != "");
 						Fld[variable] = Ask(SylCfg, a, "FLD." + variable, "FIELD>\t" + variable + ": ", Blk->Defaults[variable]);
 					}
+					QCol->Pink("R\r");
+					auto BR{ ReadFile(TDir + "/" + a) };
+					std::vector<String> LTW{};
+					auto BOM{ BR->ReadByte() == 0xef };
+					if (BOM) {
+						QCol->Warn("Syldeyn does not support BOM! Trying to remove it!");
+						Byte C;
+						do C = BR->ReadByte(); while (C < 9 || C>126);
+					}
+					BR->Position(BR->Position() - 1);
+					auto aLine{ true };
+					auto nLine{ 0 };
+					auto p{ Prefixes[ae] };
+					if (p == "") {
+						QCol->Error("Prefix error on extension: " + ae);
+					} else while (!BR->EndOfFile()) {
+						QCol->Pink(std::to_string(++nLine)+"\r");
+						auto sLine{ BR->ReadLine() };						
+						if (aLine && Trim(sLine) == p + " License:") {
+							if (nLine > 1) {
+								QCol->Warn("License start but not on start of file! File could be damaged! Mind the backup!");
+							}
+							aLine = false;
+						} else if ((!aLine) && Trim(sLine) == p + " End License") {
+							aLine = true;
+						} else if (aLine) {
+							LTW.push_back(sLine);
+						}
+					}
+					BR->Close();
+					if (!aLine) {
+						QCol->Error("Unended license block!");
+						QCol->Pink("Continuing the operation would erase all data! Fix this before trying this again!");
+						QCol->Reset();
+						exit(999);
+					}
+					auto BW{ WriteFile(TDir + "/" + a) };
+					QCol->LGreen("W\r");
+					// TODO: Top line (used in shell and Python)
+					BW->WriteLine(p + " License:");
+					for (auto bl : Blk->License) {
+						auto nversion{ TrSPrintF("%02d.%02d.%02d",CurrentYear() % 100,CurrentMonth(),CurrentDay()) };
+						auto ll{ StReplace(bl, "<$version>",nversion) };
+						ll = StReplace(ll, "[$version]", nversion);
+						ll = StReplace(ll, "<$years>", cpyYear);
+						ll = StReplace(ll, "[$years]", cpyYear);
+						ll = StReplace(ll, "<$thisfile>", a);
+						ll = StReplace(ll, "[$thisfile]", a);
+						for (auto f : Blk->Fields) {
+							ll = StReplace(ll, "<" + f + ">", SylCfg->Value(a, "fld." + f));
+							ll = StReplace(ll, "[" + f + "]", SylCfg->Value(a, "fld." + f));
+						}
+						BW->WriteLine(p + " " + ll);
+					}
+					BW->WriteLine(p + " End License");
+					for (auto l : LTW) {
+						BW->WriteLine(l);
+					}
 				}
 			}
 #pragma endregion
