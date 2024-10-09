@@ -25,6 +25,9 @@
     <Filter Include="Source Files\Syldeyn\Copy">
       <UniqueIdentifier>{87e66861-2c1e-48e1-a6f5-cb42f0982a51}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Slyvina\JCR6">
+      <UniqueIdentifier>{8c5ccbd0-5ee5-4520-b2a9-9686054806d4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Libs\Units\Source\SlyvAsk.cpp">
@@ -57,13 +60,22 @@
     <ClCompile Include="Syldeyn.cpp">
       <Filter>Source Files\Syldeyn</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Libs\JCR6\Source\JCR6_Core.cpp">
+      <Filter>Source Files\Slyvina\JCR6</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Libs\JCR6\Source\JCR6_Write.cpp">
+      <Filter>Source Files\Slyvina\JCR6</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Libs\JCR6\Source\JCR6_zlib.cpp">
+      <Filter>Source Files\Slyvina\JCR6</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Libs\Units\Source\SlyvBank.cpp">
+      <Filter>Source Files\Slyvina\Units</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\MKL2Syldeyn\bin\Release\net8.0\MKL2Syldeyn.exe">
       <Filter>Source Files\Syldeyn\Copy</Filter>
-    </None>
-    <None Include="Syldeyn_Langs.ini">
-      <Filter>Source Files\Syldeyn</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -73,5 +85,16 @@
     <CopyFileToFolders Include="Syldeyn_Blocks.ini">
       <Filter>Source Files\Syldeyn</Filter>
     </CopyFileToFolders>
+    <CopyFileToFolders Include="..\..\..\Libs\JCR6\3rdParty\zlib\zlib.dll">
+      <Filter>Source Files\Syldeyn\Copy</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Syldeyn_Langs.ini">
+      <Filter>Source Files\Syldeyn</Filter>
+    </CopyFileToFolders>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Syldeyn_Config.hpp">
+      <Filter>Source Files\Syldeyn</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
