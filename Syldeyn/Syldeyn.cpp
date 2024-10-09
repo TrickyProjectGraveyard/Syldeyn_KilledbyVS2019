@@ -108,7 +108,8 @@ namespace Slyvina {
 					J6E;
 				}				
 			}
-			QCol->Doing("Packed ", cnt);
+			std::cout << "\r";
+			QCol->Doing("Packed", cnt);
 #ifdef SylJCRUse_zlib
 				if (!cnt) {
 					JBO->AddBytes({ '1','2','3',0 }, "Leeg","Syldeyn","Error preventor, as nothing has been backed up!");

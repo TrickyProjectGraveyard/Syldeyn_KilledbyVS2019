@@ -11,7 +11,8 @@
 /MKL2Syldeyn/obj
 
 # Syldeyn project data must not be there. (Sounds odd. Not if you know what Syldeyn is and what it does).
-MKL_Syldeyn.ini
+MKL_*
+
 
 # Linux
 *.o
