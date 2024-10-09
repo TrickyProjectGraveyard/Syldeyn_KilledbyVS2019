@@ -1,8 +1,18 @@
-
+# visual studio
 /.vs
+
+# Windows Compile
 /Exe
-/MKL2Syldeyn/bin
-/MKL2Syldeyn/obj
-MKL_Syldeyn.ini
 *.obj
 /Syldeyn/x64
+
+# MKL2Syldeyn compile
+/MKL2Syldeyn/bin
+/MKL2Syldeyn/obj
+
+# Syldeyn project data must not be there. (Sounds odd. Not if you know what Syldeyn is and what it does).
+MKL_Syldeyn.ini
+
+# Linux
+*.o
+LinuxExe
