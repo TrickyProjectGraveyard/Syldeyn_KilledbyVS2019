@@ -8,6 +8,7 @@
 #include <JCR6_Core.hpp>
 #include <JCR6_Write.hpp>
 #include <SlyvDir.hpp>
+#include <SlyvSilly.hpp>
 
 using namespace Slyvina::Units;
 using namespace Slyvina::JCR6;
@@ -111,12 +112,50 @@ namespace Slyvina {
 			std::cout << "\r";
 			QCol->Doing("Packed", cnt);
 #ifdef SylJCRUse_zlib
-				if (!cnt) {
-					JBO->AddBytes({ '1','2','3',0 }, "Leeg","Syldeyn","Error preventor, as nothing has been backed up!");
-				}
-				JBO->Close(); J6E;
+			if (!cnt) {
+				JBO->AddBytes({ '1','2','3','1','2','3','1','2','3','1','2','3','1','2','3',0 }, "Leeg", "Syldeyn", "Error preventor, as nothing has been backed up!");
+			}
+			JBO->Close(); J6E;
 #endif
-				JO->Close(); J6E;
+			JO->Close(); J6E;
+#pragma endregion
+#pragma region Scan
+			QCol->Doing("Scanning", TDir);
+			for (auto a : *SylDir) {
+				auto ad{ ExtractDir(a) }, ae{ Upper(ExtractExt(a)) };
+				auto Known{ SylCfg->BoolValue(a,"Known") }, Allow{ (!VecHasString(SylCfg->List(":Dirs:","Ignore"),ad)) && Prefixes.count(ae) };
+				//std::cout << "DEBUG: " << Known << Allow << (!VecHasString(SylCfg->List(":Dirs:", "Ignore"), ad)) << Prefixes.count(ae) << ": " << a << "/" << ad << "/" << ae << "\n";
+				if (!Allow) continue;
+				if (!Known) {
+					cls(); 
+					QCol->Color(qColor::Yellow, qColor::Red);
+					std::cout << a; QCol->Reset(); std::cout << "\n";
+					std::cout << "1 = Add to the Syldeyn registry for version update\n";
+					std::cout << "2 = Ignore this file for now\n";
+					std::cout << "3 = Ignore this file forever\n";
+					if (ad != "") {
+						std::cout << "4 = Ignore the directory \""<<ad<<"\" forever\n";
+					}
+					opnieuw:
+						auto ch{ ToInt(ReadLine("Please tell me what to do: ")) };
+						switch (ch) {
+						case 1: SylCfg->BoolValue(a, "Allow", true); SylCfg->BoolValue(a, "Known", true); Allow = true; break;
+						case 2: continue;
+						case 3: SylCfg->BoolValue(a, "Allow", false); SylCfg->BoolValue(a, "Known", true); continue;
+						case 4: if (ad != "") {
+							SylCfg->Add(":Dirs:", "Ignore", ad);
+							continue;
+						}
+							  // NO BREAK! This is a fallthrough!
+						default:
+							std::cout << "? Redo from start!\n"; // Just a nod to good old GW-BASIC. Part of my history as a coder!
+						}
+					if (!Allow) goto opnieuw; // the 'continue' command forces me to or the wrong loop will be 'continued'.
+					QCol->Doing("Updating", a);
+					SylCfg->NewValue(a, "File", a); // Void case ignoring.
+					auto iYear{ Ask(SylCfg,a,"iYear","Initial Year:",std::to_string(CurrentYear())) };
+				}
+			}
 #pragma endregion
 		}
 	}
