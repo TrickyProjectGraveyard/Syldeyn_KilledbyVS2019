@@ -223,7 +223,7 @@ namespace Slyvina {
 				Allow = SylCfg->BoolValue(a, "Allow");
 				auto Modified{ false }; // Must normally be false, but can be set to 'true' for debugging reasons. Then all files will always count as "modified".
 				Modified = Modified || FileTimeStamp(TDir + "/" + a) != SylCfg->IntValue(a, "Time");
-				Modified = Modified || FileSize(TDir + "/" + a) != SylCfg->IncValue(a, "Size");
+				Modified = Modified || FileSize(TDir + "/" + a) != SylCfg->IntValue(a, "Size");
 				if (Allow && Modified) {
 					QCol->Doing("Updating", a);
 					if (SylCfg->Value(a, "License") == "" && SylCfg->Value(a, "LicenseByName") != "") {
@@ -302,8 +302,8 @@ namespace Slyvina {
 					QCol->LGreen("W\r");
 					// TODO: Top line (used in shell and Python)
 					BW->WriteLine(p + " License:");
+					auto nversion{ TrSPrintF("%02d.%02d.%02d",CurrentYear() % 100,CurrentMonth(),CurrentDay()) };
 					for (auto bl : Blk->License) {
-						auto nversion{ TrSPrintF("%02d.%02d.%02d",CurrentYear() % 100,CurrentMonth(),CurrentDay()) };
 						auto ll{ StReplace(bl, "<$version>",nversion) };
 						ll = StReplace(ll, "[$version]", nversion);
 						ll = StReplace(ll, "<$years>", cpyYear);
@@ -319,8 +319,11 @@ namespace Slyvina {
 					BW->WriteLine(p + " End License");
 					for (auto l : LTW) {
 						BW->WriteLine(l);
-					}
-					BW->Close();
+					} 
+					BW->Close(); 
+					SylCfg->Value(a, "Time", FileTimeStamp(TDir + "/" + a));
+					SylCfg->Value(a, "Size", FileSize(TDir + "/" + a));
+					SylCfg->Value(a, "Version", nversion);
 				}
 			}
 #pragma endregion
