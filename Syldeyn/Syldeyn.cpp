@@ -168,6 +168,7 @@ namespace Slyvina {
 				//std::cout << "DEBUG: " << Known << Allow << (!VecHasString(SylCfg->List(":Dirs:", "Ignore"), ad)) << Prefixes.count(ae) << ": " << a << "/" << ad << "/" << ae << "\n";
 				if (!Allow) continue;
 				if (!Known) {
+					QCol->Reset();
 					cls();
 					QCol->Color(qColor::Yellow, qColor::Red);
 					std::cout << a; QCol->Reset(); std::cout << "\n";
