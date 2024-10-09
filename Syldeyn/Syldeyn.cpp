@@ -19,15 +19,56 @@ namespace Slyvina {
 	namespace Syldeyn {
 		String SyldeynDir{ "" };
 		std::map<String, String> Prefixes{};
+		struct _LBlock {
+			String
+				Name{ "" },
+				ID{ "" };				
+			std::vector<String> Fields, License{};
+			std::map<String, String> Defaults;
+		};
+		typedef std::shared_ptr<_LBlock> LBlock;
+		std::map<uint32, LBlock> Blocks;
+		std::map<String, LBlock> BlocksByName;
+		std::map<String, LBlock> BlocksByID;
 
 		void GetPrefixes() {
 			String PrefIni{ SyldeynDir + "/Syldeyn_Langs.ini" };
 			if (!FileExists(PrefIni)) { QCol->Error(PrefIni+" not found"); exit(404); }
 			auto PrefG{ LoadGINIE(PrefIni) };
-			auto PrefC{ PrefG->Categories() };
+			auto PrefC{ PrefG->Categories() };			
 			for (auto C : *PrefC) {
 				auto Ext{ Split(PrefG->Value(C,"Extensions"),',') };
 				for (auto E : *Ext) Prefixes[E] = PrefG->Value(C, "Prefix");
+			
+			}
+		}
+
+		void GetBlocks() {
+			String BlckIni{ SyldeynDir + "/Syldeyn_Blocks.ini" };
+			if (!FileExists(BlckIni)) { QCol->Error(BlckIni + " not found"); exit(404); }
+			auto BlckG{ LoadGINIE(BlckIni) };
+			auto BlckC{ BlckG->Categories() };
+			auto num{ 0u };
+			for (auto C : *BlckC) if (!BlocksByID.count(C)) {
+				auto B{ new _LBlock() };
+				auto SB{ std::shared_ptr<_LBlock>(B) };
+				auto
+					LL{ BlckG->List(C,"License") },
+					LF{ BlckG->List(C,"Fields") };
+				B->ID = C;
+				B->Name = BlckG->Value(C, "Name");
+				Blocks[++num] = SB;
+				BlocksByName[B->Name] = SB;
+				BlocksByID[B->ID] = SB;
+				B->Fields = *LF;
+				std::cout << "Debug block #" << num << ": " << SB->Name << "; (" << SB->ID << ")\n";
+				for (auto LLL : *LL) {
+					auto NL{ StReplace(LLL,"<$tab>","\t") }; NL = StReplace(NL, "<$spc>", " ");
+					if (LLL == "$WL") B->License.push_back(""); else B->License.push_back(NL);
+				}
+				for (auto FLD : B->Fields) {
+					B->Defaults[FLD] = BlckG->Value(C, "Default." + FLD);
+				}
 			}
 		}
 
@@ -127,33 +168,73 @@ namespace Slyvina {
 				//std::cout << "DEBUG: " << Known << Allow << (!VecHasString(SylCfg->List(":Dirs:", "Ignore"), ad)) << Prefixes.count(ae) << ": " << a << "/" << ad << "/" << ae << "\n";
 				if (!Allow) continue;
 				if (!Known) {
-					cls(); 
+					cls();
 					QCol->Color(qColor::Yellow, qColor::Red);
 					std::cout << a; QCol->Reset(); std::cout << "\n";
-					std::cout << "1 = Add to the Syldeyn registry for version update\n";
-					std::cout << "2 = Ignore this file for now\n";
-					std::cout << "3 = Ignore this file forever\n";
+					std::cout << " 1 = Add to the Syldeyn registry for version update\n";
+					std::cout << " 2 = Ignore this file for now\n";
+					std::cout << " 3 = Ignore this file forever\n";
 					if (ad != "") {
-						std::cout << "4 = Ignore the directory \""<<ad<<"\" forever\n";
+						std::cout << " 4 = Ignore the directory \"" << ad << "\" forever\n";
 					}
-					opnieuw:
-						auto ch{ ToInt(ReadLine("Please tell me what to do: ")) };
-						switch (ch) {
-						case 1: SylCfg->BoolValue(a, "Allow", true); SylCfg->BoolValue(a, "Known", true); Allow = true; break;
-						case 2: continue;
-						case 3: SylCfg->BoolValue(a, "Allow", false); SylCfg->BoolValue(a, "Known", true); continue;
-						case 4: if (ad != "") {
-							SylCfg->Add(":Dirs:", "Ignore", ad);
-							continue;
-						}
-							  // NO BREAK! This is a fallthrough!
-						default:
-							std::cout << "? Redo from start!\n"; // Just a nod to good old GW-BASIC. Part of my history as a coder!
-						}
+				opnieuw:
+					auto ch{ ToInt(ReadLine("Please tell me what to do: ")) };
+					switch (ch) {
+					case 1: SylCfg->BoolValue(a, "Allow", true); SylCfg->BoolValue(a, "Known", true); Allow = true; break;
+					case 2: continue;
+					case 3: SylCfg->BoolValue(a, "Allow", false); SylCfg->BoolValue(a, "Known", true); continue;
+					case 4: if (ad != "") {
+						SylCfg->Add(":Dirs:", "Ignore", ad);
+						continue;
+					}
+						  // NO BREAK! This is a fallthrough!
+					default:
+						std::cout << "? Redo from start!\n"; // Just a nod to good old GW-BASIC. Part of my history as a coder!
+					}
 					if (!Allow) goto opnieuw; // the 'continue' command forces me to or the wrong loop will be 'continued'.
+				}
+				Allow = SylCfg->BoolValue(a, "Allow");
+				auto Modified{ false }; // Must normally be false, but can be set to 'true' for debugging reasons. Then all files will always count as "modified".
+				Modified = Modified || FileTimeStamp(TDir + "/" + a) != SylCfg->IntValue(a, "Time");
+				Modified = Modified || FileSize(TDir + "/" + a) != SylCfg->IncValue(a, "Size");
+				if (Allow && Modified) {
 					QCol->Doing("Updating", a);
+					if (SylCfg->Value(a, "License") == "" && SylCfg->Value(a, "LicenseByName") != "") {
+						auto LBN{ SylCfg->Value(a, "LicenseByName") };
+						if (BlocksByName.count(LBN)) SylCfg->Value(a, "License", Upper(BlocksByName[LBN]->ID));
+						else QCol->Error("License \"" + LBN + "\" could not be retrieved from Syldeyn");
+					}
+					if (SylCfg->Value(a, "License") == "") {
+						QCol->Color(qColor::Yellow, qColor::Blue); std::cout << "License";
+						QCol->Reset(); std::cout << "\n";
+						auto maxch{ 0u };
+						for (auto id : Blocks) {
+							std::cout << TrSPrintF("%2d = ", id.first) + id.second->Name+"\n";
+							maxch = std::max(maxch, id.first);
+						}
+						auto ch{ 0u };
+						do ch = ToUInt(ReadLine("Please select the license: ")); while (ch<1 || ch>maxch);
+						SylCfg->Value(a, "License", Blocks[ch]->ID);
+					}
 					SylCfg->NewValue(a, "File", a); // Void case ignoring.
-					auto iYear{ Ask(SylCfg,a,"iYear","Initial Year:",std::to_string(CurrentYear())) };
+					auto cYear{ Trim(std::to_string(CurrentYear())) };
+					auto iYear{ Ask(SylCfg,a,"iYear","Initial Year:",cYear) };
+					auto cpyYear{ SylCfg->NewValue(a,"cYear",iYear) };
+					if (!Suffixed(cpyYear, cYear)) {
+						QCol->Doing("Year correction: " + cpyYear, " -> ");
+						cpyYear + ", " + cYear;
+						SylCfg->Value(a, "cYear", cpyYear);
+						QCol->LGreen(cpyYear + "\n");
+					}
+					auto Blk{ BlocksByID[SylCfg->Value(a,"License")] };
+					if (!Blk) {
+						QCol->Error("Block '" + SylCfg->Value(a, "License") + "' appears to be null"); exit(501);
+					}
+					std::map<String, String> Fld{};
+					for (auto variable : Blk->Fields) {
+						if (variable != "");
+						Fld[variable] = Ask(SylCfg, a, "FLD." + variable, "FIELD>\t" + variable + ": ", Blk->Defaults[variable]);
+					}
 				}
 			}
 #pragma endregion
@@ -169,7 +250,10 @@ int main(int arglen, char** args) {
 	SylInit_zlib();
 	SyldeynDir = ExtractDir(args[0]);
 	GetPrefixes();
+	GetBlocks();
 	if (arglen <= 1) Process(CurrentDir());
 	else for (int i = 1; i < arglen; i++) Process(args[i]);
+	QCol->LCyan("Ok");
+	QCol->Reset();
 	return 0;
 }
